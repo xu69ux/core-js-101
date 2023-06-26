@@ -20,8 +20,13 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
+
+function Rectangle(width, height) {
+  this.width = width;
+  this.height = height;
+  Rectangle.prototype.getArea = function get() {
+    return this.width * this.height;
+  };
 }
 
 
@@ -35,8 +40,8 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
 
 
@@ -51,8 +56,9 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  const obj = JSON.parse(json);
+  return Object.setPrototypeOf(obj, proto);
 }
 
 
@@ -110,36 +116,126 @@ function fromJSON(/* proto, json */) {
  *  For more examples see unit tests.
  */
 
+/* eslint max-classes-per-file: "off" */
+const ERR_DOUBLE = 'Element, id and pseudo-element should not occur more then one time inside the selector';
+const ERR_ORDER = 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element';
+
+class CssSelector {
+  constructor(
+    {
+      element, id, className, attr, pseudoClass, pseudoElement,
+    },
+  ) {
+    this.Xelement = null;
+    this.Xid = null;
+    this.Xclasses = [];
+    this.Xattrs = [];
+    this.XpseudoClasses = [];
+    this.XpseudoElement = null;
+
+    if (element) this.Xelement = element;
+    if (id) this.Xid = id;
+    if (className) this.Xclasses.push(className);
+    if (attr) this.Xattrs.push(attr);
+    if (pseudoClass) this.XpseudoClasses.push(pseudoClass);
+    if (pseudoElement) this.XpseudoElement = pseudoElement;
+  }
+
+  element(val) {
+    if (this.Xelement) throw new Error(ERR_DOUBLE);
+    if (this.Xid || this.Xclasses.length || this.Xattrs.length
+        || this.XpseudoClasses.length || this.XpseudoElement) throw new Error(ERR_ORDER);
+    this.Xelement = val;
+    return this;
+  }
+
+  id(val) {
+    if (this.Xid) throw new Error(ERR_DOUBLE);
+    if (this.Xclasses.length || this.Xattrs.length
+        || this.XpseudoClasses.length || this.XpseudoElement) throw new Error(ERR_ORDER);
+    this.Xid = val;
+    return this;
+  }
+
+  class(val) {
+    if (this.Xattrs.length || this.XpseudoClasses.length
+      || this.XpseudoElement) throw new Error(ERR_ORDER);
+    this.Xclasses.push(val);
+    return this;
+  }
+
+  attr(val) {
+    if (this.XpseudoClasses.length || this.XpseudoElement) throw new Error(ERR_ORDER);
+    this.Xattrs.push(val);
+    return this;
+  }
+
+  pseudoClass(val) {
+    if (this.XpseudoElement) throw new Error(ERR_ORDER);
+    this.XpseudoClasses.push(val);
+    return this;
+  }
+
+  pseudoElement(val) {
+    if (this.XpseudoElement) throw new Error(ERR_DOUBLE);
+    this.XpseudoElement = val;
+    return this;
+  }
+
+  stringify() {
+    const result = [];
+    if (this.Xelement) result.push(this.Xelement);
+    if (this.Xid) result.push(`#${this.Xid}`);
+    if (this.Xclasses.length) result.push(this.Xclasses.map((v) => `.${v}`));
+    if (this.Xattrs.length) result.push(this.Xattrs.map((v) => `[${v}]`));
+    if (this.XpseudoClasses.length) result.push(this.XpseudoClasses.map((v) => `:${v}`));
+    if (this.XpseudoElement) result.push(`::${this.XpseudoElement}`);
+
+    return result.flat().join('');
+  }
+}
+
+class CssCombinator {
+  constructor(selector1, combinator, selector2) {
+    this.selector1 = selector1;
+    this.combinator = combinator;
+    this.selector2 = selector2;
+  }
+
+  stringify() {
+    return `${this.selector1.stringify()} ${this.combinator} ${this.selector2.stringify()}`;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new CssSelector({ element: value });
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new CssSelector({ id: value });
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new CssSelector({ className: value });
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new CssSelector({ attr: value });
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new CssSelector({ pseudoClass: value });
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return new CssSelector({ pseudoElement: value });
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    return new CssCombinator(selector1, combinator, selector2);
   },
 };
-
 
 module.exports = {
   Rectangle,
